@@ -37,31 +37,120 @@ st.markdown("""
 [data-testid="stSidebar"] { background-color: #FFF5F9 !important; border-right: 1px solid var(--border) !important; }
 h1, h2, h3, h4, h5, h6, p, label, span { color: #1F2937 !important; }
 
-/* --- CUSTOM HAMBURGER SIDEBAR TOGGLE --- */
+/* ========================================================================= */
+/* NUCLEAR FIX FOR "KEY" TEXT & SIDEBAR TOGGLE */
+/* ========================================================================= */
+
+/* 1. HIDE THE BUTTON ELEMENT ITSELF */
 [data-testid="sidebar-button"] {
-    display: flex !important;
-    background-color: white !important;
-    border-radius: 8px !important;
-    box-shadow: 0px 4px 10px rgba(216, 138, 174, 0.2) !important;
-    border: 1px solid var(--border) !important;
-    left: 20px !important;
-    top: 15px !important;
-    z-index: 999999 !important;
-    width: 40px !important;
-    height: 40px !important;
-    justify-content: center !important;
-    align-items: center !important;
-}
-[data-testid="sidebar-button"] svg { display: none !important; }
-[data-testid="sidebar-button"]::before {
-    content: "☰" !important; 
-    font-family: 'Poppins', sans-serif !important;
-    font-size: 24px !important;
-    color: var(--primary) !important;
-    font-weight: bold !important;
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    position: absolute !important;
+    top: -9999px !important;
+    left: -9999px !important;
 }
 
-/* --- CHAT UI/UX ALIGNMENT --- */
+/* 2. HIDE THE HEADER CONTAINER THAT MIGHT HOLD THE TEXT */
+[data-testid="stSidebarHeader"] {
+    display: none !important;
+    height: 0 !important;
+}
+
+/* 3. PUSH SIDEBAR CONTENT UP TO COVER ANY REMAINING GAP */
+[data-testid="stSidebar"] > div:first-child {
+    padding-top: 0px !important;
+}
+
+[data-testid="stSidebarNav"] {
+    padding-top: 0px !important;
+    margin-top: -20px !important; /* Adjust if needed to pull content up */
+}
+
+/* 4. HIDE COLLAPSE CONTROL ARROW */
+[data-testid="collapsedControl"] {
+    display: none !important;
+}
+
+/* 5. FONT FIX: PREVENT ICONS FROM TURNING INTO TEXT */
+/* This rule says: apply Poppins to everything EXCEPT things that look like icons */
+.stApp, div:not(.material-icons):not(.material-symbols-rounded), 
+span:not(.material-icons):not(.material-symbols-rounded), 
+p, label, h1, h2, h3, h4, h5, h6 { 
+    font-family: 'Poppins', sans-serif !important; 
+}
+
+/* ========================================================================= */
+/* RESPONSIVE LAYOUT LOGIC */
+/* ========================================================================= */
+
+/* DESKTOP (Width > 768px) */
+@media (min-width: 768px) {
+    [data-testid="stSidebar"] {
+        min-width: 400px !important;
+        max-width: 400px !important;
+    }
+}
+
+/* MOBILE (Width <= 768px) */
+/* We MUST re-enable the button on mobile, or users can't open/close the menu.
+   But we will style it carefully to avoid the "key" text glitch. */
+@media (max-width: 768px) {
+    [data-testid="stSidebar"] {
+        min-width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    /* Re-enable header on mobile so button can exist */
+    [data-testid="stSidebarHeader"] {
+        display: flex !important;
+        height: auto !important;
+    }
+
+    [data-testid="sidebar-button"] {
+        display: flex !important;
+        position: fixed !important; /* Float it */
+        top: 10px !important;
+        left: 10px !important;
+        width: 45px !important;
+        height: 45px !important;
+        z-index: 100000 !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+        background-color: white !important;
+        border-radius: 8px !important;
+        box-shadow: 0px 4px 10px rgba(0,0,0,0.1) !important;
+        justify-content: center !important;
+        align-items: center !important;
+        
+        /* HIDE INTERNAL TEXT (The "key..." glitch) */
+        color: transparent !important;
+        font-size: 0 !important;
+    }
+
+    /* Hide the SVG arrow */
+    [data-testid="sidebar-button"] svg {
+        display: none !important;
+    }
+
+    /* Force new icon */
+    [data-testid="sidebar-button"]::before {
+        content: "☰" !important;
+        font-family: sans-serif !important; /* Safe font for symbol */
+        font-size: 24px !important;
+        color: var(--primary) !important;
+        display: block !important;
+        visibility: visible !important;
+    }
+}
+
+/* ========================================================================= */
+/* REST OF STYLING */
+/* ========================================================================= */
+
+/* Chat UI */
 .chat-row { display: flex; width: 100%; margin-bottom: 15px; clear: both; }
 .chat-row.assistant { justify-content: flex-start; }
 .chat-row.assistant .chat-bubble { background-color: #F3F4F6; color: #1F2937 !important; border-bottom-left-radius: 2px; }
@@ -71,10 +160,7 @@ h1, h2, h3, h4, h5, h6, p, label, span { color: #1F2937 !important; }
 .chat-timestamp { font-size: 10px; opacity: 0.7; margin-top: 6px; display: block; color: inherit !important; }
 .user .chat-timestamp { text-align: right; }
 
-.stApp, div, span, p, label { font-family: 'Poppins', sans-serif !important; }
-
-/* Sidebar Panels Styling */
-[data-testid="stSidebar"] { min-width: 380px !important; max-width: 380px !important; }
+/* Sidebar Panels */
 div[data-testid="stSidebarUserContent"] .stRadio > div { gap: 12px; }
 div[data-testid="stSidebarUserContent"] label[data-baseweb="radio"] {
     background-color: white !important; padding: 22px !important; border-radius: 12px;
@@ -83,19 +169,22 @@ div[data-testid="stSidebarUserContent"] label[data-baseweb="radio"] {
 }
 div[data-testid="stSidebarUserContent"] label[data-baseweb="radio"]:hover { border-color: var(--primary); transform: translateX(8px); }
 
-/* Main Dashboard Cards */
+/* Cards */
 .card { background-color: var(--card); border-radius: var(--radius); padding: 25px; box-shadow: 0px 6px 20px rgba(216, 138, 174, 0.1); border: 1px solid var(--border); margin-bottom: 20px; }
 .kpi-title { font-size: 13px; color: #6B7280 !important; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
 .kpi-value { font-size: 30px; font-weight: 700; color: var(--foreground) !important; }
 
-/* --- PREMIUM SEX ICON CARDS --- */
+/* Sex Icon Cards */
 .sex-icon-card { display: flex; align-items: center; padding: 20px; border-radius: 16px; background: white; border: 1px solid var(--border); box-shadow: 0px 4px 10px rgba(0,0,0,0.03); transition: all 0.3s ease; }
 .sex-icon-card:hover { transform: translateY(-3px); box-shadow: 0px 10px 20px rgba(216, 138, 174, 0.12); }
 .icon-circle { width: 55px; height: 55px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 26px; margin-right: 15px; }
 .male-icon { background: linear-gradient(135deg, #FFE4F0 0%, #F3E6EC 100%); color: #D88AAE !important; border: 2px solid #F3E6EC; }
 .female-icon { background: linear-gradient(135deg, #F3E8FF 0%, #EDE9FE 100%); color: #B388FF !important; border: 2px solid #EDE9FE; }
+.icon-text-container { display: flex; flex-direction: column; }
+.icon-label { font-size: 12px; font-weight: 600; color: #9CA3AF; text-transform: uppercase; }
+.icon-value { font-size: 22px; font-weight: 700; color: #1F2937; }
 
-/* --- NUTRITIONIST CHANSEY CHARACTER --- */
+/* Nutritionist Chansey Character */
 .chansey-character { position: relative; width: 80px; height: 80px; margin: 0 auto 10px auto; }
 .chansey-body { position: absolute; width: 60px; height: 65px; background: linear-gradient(135deg, #f4c2d8 0%, #e8a0c0 50%, #d88aae 100%); border-radius: 50% 50% 48% 48%; top: 8px; left: 10px; box-shadow: inset -8px -8px 15px rgba(200, 100, 150, 0.3); z-index: 1; }
 .chansey-egg { position: absolute; width: 28px; height: 32px; background: linear-gradient(135deg, #fff9e6 0%, #f5f0dc 100%); border-radius: 50%; top: 32px; left: 26px; border: 2px solid #e8a0c0; z-index: 2; }
@@ -145,7 +234,6 @@ def get_chansey_response(user_input, data):
     user_input = user_input.lower()
     latest_year = data["SchoolYear"].max()
     
-    # 1. Geographic In-Depth Analysis
     if "analysis" in user_input and "geographic" in user_input:
         current_data = data[data["SchoolYear"] == latest_year]
         top_prio = current_data.sort_values("UnderweightRate", ascending=False).iloc[0]
@@ -154,18 +242,22 @@ def get_chansey_response(user_input, data):
                 f"📍 **{top_prio['NameHospital']}** is the highest priority cluster with an underweight rate of **{top_prio['UnderweightRate']:.2f}%**. \n"
                 f"📈 The current average rate across Scotland is **{avg_rate:.2f}%**. Areas shaded darker on the map require immediate nutritional intervention.")
 
-    # 2. Historical & Master Data handling
     if "all years" in user_input or "historical" in user_input:
         total_rec = data["ValidCounts"].sum()
         year_range = f"{data['SchoolYear'].min()} - {data['SchoolYear'].max()}"
         return f"Across the full historical scope ({year_range}), we have assessed **{total_rec:,}** total student records. The data suggests localized clusters of nutritional stress in the {latest_year} period."
 
-    # 3. Specific Priority Queries
     if any(word in user_input for word in ["priority", "highest", "worst", "underweight", "need"]):
         top_row = data[data["SchoolYear"] == latest_year].sort_values("UnderweightRate", ascending=False).iloc[0]
         return f"In {latest_year}, **{top_row['NameHospital']}** is the highest priority health board with a **{top_row['UnderweightRate']:.2f}%** underweight rate."
+    
+    if any(word in user_input for word in ["hello", "hi", "hey"]):
+        return "Hello! I'm Nutritionist Chansey. I can provide a deep analysis of the Geographic Priority Map or Historical trends. What would you like to explore?"
+    
+    if any(word in user_input for word in ["dumb", "stupid", "potato"]):
+        return "I'm a healthcare assistant AI, focused on nutrition! While I don't know much about potatoes, I can tell you which health boards have the highest nutritional needs."
 
-    return "Hello! I can provide an in-depth analysis of our geographic map or historical performance. Try asking: 'Give an in-depth analysis of the geographic priority map'."
+    return "I can provide an in-depth analysis of the data! Try asking: 'Give an in-depth analysis of the geographic priority map'."
 
 # =========================
 # SIDEBAR NAVIGATION & AI
@@ -301,24 +393,70 @@ elif page == "📊 Demographic Analysis":
         fig_sex = px.bar(sex_df, x="Sex", y="UnderweightRate", color="Sex", color_discrete_map={"Male": "#D88AAE", "Female": "#B388FF"})
         fig_sex.update_layout(showlegend=False, height=350, template="plotly_white"); st.plotly_chart(fig_sex, use_container_width=True); st.markdown('</div>', unsafe_allow_html=True)
 
+# =========================
+# RESTORED: WEIGHT CATEGORY DISTRIBUTION
+# =========================
 elif page == "🍕 Weight Category Distribution":
+    st.caption("Detailed view of BMI status across population segments")
+    
     st.markdown('<div class="card">', unsafe_allow_html=True)
     f1, f2, f3 = st.columns(3)
-    with f1: sel_year = st.selectbox("Select Year", ["All Years"] + sorted(df['SchoolYear'].unique().tolist(), reverse=True))
-    with f2: sel_loc = st.selectbox("Select Location", ["All Locations"] + sorted(df['NameHospital'].unique().tolist()))
-    with f3: sel_sex = st.selectbox("Select Sex", ["Both Sex"] + sorted(df['Sex'].unique().tolist()))
+    
+    with f1:
+        year_opts = ["All Years"] + sorted(df['SchoolYear'].unique().tolist(), reverse=True)
+        sel_year = st.selectbox("Select Year", year_opts)
+    with f2:
+        loc_opts = ["All Locations"] + sorted(df['NameHospital'].unique().tolist())
+        sel_loc = st.selectbox("Select Location", loc_opts)
+    with f3:
+        sex_opts = ["Both Sex"] + sorted(df['Sex'].unique().tolist())
+        sel_sex = st.selectbox("Select Sex", sex_opts)
     st.markdown('</div>', unsafe_allow_html=True)
+
+    # Filter data logic
     filtered_df = df.copy()
-    if sel_year != "All Years": filtered_df = filtered_df[filtered_df['SchoolYear'] == sel_year]
-    if sel_loc != "All Locations": filtered_df = filtered_df[filtered_df['NameHospital'] == sel_loc]
-    if sel_sex != "Both Sex": filtered_df = filtered_df[filtered_df['Sex'] == sel_sex]
-    totals = {"Healthy": filtered_df['EpiHealthyWeight'].sum(), "Underweight": filtered_df['EpiUnderweight'].sum(), "Overweight": filtered_df['EpiOverweight'].sum(), "Obese": filtered_df['EpiObese'].sum()}
+    if sel_year != "All Years":
+        filtered_df = filtered_df[filtered_df['SchoolYear'] == sel_year]
+    if sel_loc != "All Locations":
+        filtered_df = filtered_df[filtered_df['NameHospital'] == sel_loc]
+    if sel_sex != "Both Sex":
+        filtered_df = filtered_df[filtered_df['Sex'] == sel_sex]
+
+    # Aggregate counts for the pie chart
+    totals = {
+        "Healthy": filtered_df['EpiHealthyWeight'].sum(),
+        "Underweight": filtered_df['EpiUnderweight'].sum(),
+        "Overweight": filtered_df['EpiOverweight'].sum(),
+        "Obese": filtered_df['EpiObese'].sum()
+    }
     pie_df = pd.DataFrame(totals.items(), columns=["Category", "Count"])
+
+    # Visual Display
     st.markdown('<div class="card">', unsafe_allow_html=True)
     if pie_df["Count"].sum() > 0:
-        fig_pie = px.pie(pie_df, values="Count", names="Category", hole=0.45, color="Category", color_discrete_map={"Healthy": "#10B981", "Underweight": "#F59E0B", "Overweight": "#D88AAE", "Obese": "#B388FF"})
-        fig_pie.update_layout(height=500, template="plotly_white"); st.plotly_chart(fig_pie, use_container_width=True)
-    else: st.warning("No data found for the selected filters.")
+        fig_pie = px.pie(
+            pie_df, 
+            values="Count", 
+            names="Category",
+            hole=0.45,
+            color="Category",
+            color_discrete_map={
+                "Healthy": "#10B981", 
+                "Underweight": "#F59E0B", 
+                "Overweight": "#D88AAE", 
+                "Obese": "#B388FF"
+            }
+        )
+        fig_pie.update_traces(textposition='inside', textinfo='percent+label')
+        fig_pie.update_layout(
+            height=500,
+            margin=dict(t=20, b=20, l=0, r=0),
+            legend=dict(orientation="h", yanchor="bottom", y=-0.1, xanchor="center", x=0.5),
+            template="plotly_white"
+        )
+        st.plotly_chart(fig_pie, use_container_width=True)
+    else:
+        st.warning("No data found for the selected filters.")
     st.markdown('</div>', unsafe_allow_html=True)
 
 elif page == "📄 Master Data Table":
