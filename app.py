@@ -37,9 +37,14 @@ st.markdown("""
 [data-testid="stSidebar"] { background-color: #FFF5F9 !important; border-right: 1px solid var(--border) !important; }
 h1, h2, h3, h4, h5, h6, p, label, span { color: #1F2937 !important; }
 
-/* ========================================================================= */
+/* FIX: PREVENT "KEY" TEXT GLITCH by excluding icons from font family */
+.stApp, div:not([class*="material"]), span:not([class*="material"]), p, label, h1, h2, h3, h4, h5, h6 { 
+    font-family: 'Poppins', sans-serif !important; 
+}
+
+/* ============================================================ */
 /* NUCLEAR FIX FOR "KEY" TEXT & SIDEBAR TOGGLE */
-/* ========================================================================= */
+/* ============================================================ */
 
 /* 1. HIDE THE BUTTON ELEMENT ITSELF */
 [data-testid="sidebar-button"] {
@@ -74,17 +79,9 @@ h1, h2, h3, h4, h5, h6, p, label, span { color: #1F2937 !important; }
     display: none !important;
 }
 
-/* 5. FONT FIX: PREVENT ICONS FROM TURNING INTO TEXT */
-/* This rule says: apply Poppins to everything EXCEPT things that look like icons */
-.stApp, div:not(.material-icons):not(.material-symbols-rounded), 
-span:not(.material-icons):not(.material-symbols-rounded), 
-p, label, h1, h2, h3, h4, h5, h6 { 
-    font-family: 'Poppins', sans-serif !important; 
-}
-
-/* ========================================================================= */
+/* ============================================================ */
 /* RESPONSIVE LAYOUT LOGIC */
-/* ========================================================================= */
+/* ============================================================ */
 
 /* DESKTOP (Width > 768px) */
 @media (min-width: 768px) {
@@ -95,8 +92,6 @@ p, label, h1, h2, h3, h4, h5, h6 {
 }
 
 /* MOBILE (Width <= 768px) */
-/* We MUST re-enable the button on mobile, or users can't open/close the menu.
-   But we will style it carefully to avoid the "key" text glitch. */
 @media (max-width: 768px) {
     [data-testid="stSidebar"] {
         min-width: 100% !important;
@@ -146,9 +141,9 @@ p, label, h1, h2, h3, h4, h5, h6 {
     }
 }
 
-/* ========================================================================= */
+/* ============================================================ */
 /* REST OF STYLING */
-/* ========================================================================= */
+/* ============================================================ */
 
 /* Chat UI */
 .chat-row { display: flex; width: 100%; margin-bottom: 15px; clear: both; }
@@ -178,8 +173,8 @@ div[data-testid="stSidebarUserContent"] label[data-baseweb="radio"]:hover { bord
 .sex-icon-card { display: flex; align-items: center; padding: 20px; border-radius: 16px; background: white; border: 1px solid var(--border); box-shadow: 0px 4px 10px rgba(0,0,0,0.03); transition: all 0.3s ease; }
 .sex-icon-card:hover { transform: translateY(-3px); box-shadow: 0px 10px 20px rgba(216, 138, 174, 0.12); }
 .icon-circle { width: 55px; height: 55px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 26px; margin-right: 15px; }
-.male-icon { background: linear-gradient(135deg, #FFE4F0 0%, #F3E6EC 100%); color: #D88AAE !important; border: 2px solid #F3E6EC; }
-.female-icon { background: linear-gradient(135deg, #F3E8FF 0%, #EDE9FE 100%); color: #B388FF !important; border: 2px solid #EDE9FE; }
+.male-icon { background: linear-gradient(135deg, #F3E8FF 0%, #EDE9FE 100%); color: #B388FF !important; border: 2px solid #EDE9FE; }
+.female-icon { background: linear-gradient(135deg, #FFE4F0 0%, #F3E6EC 100%); color: #D88AAE !important; border: 2px solid #F3E6EC; }
 .icon-text-container { display: flex; flex-direction: column; }
 .icon-label { font-size: 12px; font-weight: 600; color: #9CA3AF; text-transform: uppercase; }
 .icon-value { font-size: 22px; font-weight: 700; color: #1F2937; }
@@ -236,11 +231,15 @@ def get_chansey_response(user_input, data):
     
     if "analysis" in user_input and "geographic" in user_input:
         current_data = data[data["SchoolYear"] == latest_year]
-        top_prio = current_data.sort_values("UnderweightRate", ascending=False).iloc[0]
-        avg_rate = current_data["UnderweightRate"].mean()
+        # RECALCULATE PRIORITY TO BE CONSISTENT
+        prio_agg = current_data.groupby("NameHospital")[["EpiUnderweight", "ValidCounts"]].sum().reset_index()
+        prio_agg["Rate"] = (prio_agg["EpiUnderweight"] / prio_agg["ValidCounts"]) * 100
+        top_row = prio_agg.sort_values("Rate", ascending=False).iloc[0]
+        
+        avg_rate = (current_data["EpiUnderweight"].sum() / current_data["ValidCounts"].sum()) * 100
         return (f"Based on the **Geographic Priority Map** for {latest_year}: \n\n"
-                f"📍 **{top_prio['NameHospital']}** is the highest priority cluster with an underweight rate of **{top_prio['UnderweightRate']:.2f}%**. \n"
-                f"📈 The current average rate across Scotland is **{avg_rate:.2f}%**. Areas shaded darker on the map require immediate nutritional intervention.")
+                f"📍 **{top_row['NameHospital']}** is the highest priority cluster with an underweight rate of **{top_row['Rate']:.2f}%**. \n"
+                f"📈 The current national average rate is **{avg_rate:.2f}%**. Areas shaded darker on the map require immediate nutritional intervention.")
 
     if "all years" in user_input or "historical" in user_input:
         total_rec = data["ValidCounts"].sum()
@@ -248,8 +247,12 @@ def get_chansey_response(user_input, data):
         return f"Across the full historical scope ({year_range}), we have assessed **{total_rec:,}** total student records. The data suggests localized clusters of nutritional stress in the {latest_year} period."
 
     if any(word in user_input for word in ["priority", "highest", "worst", "underweight", "need"]):
-        top_row = data[data["SchoolYear"] == latest_year].sort_values("UnderweightRate", ascending=False).iloc[0]
-        return f"In {latest_year}, **{top_row['NameHospital']}** is the highest priority health board with a **{top_row['UnderweightRate']:.2f}%** underweight rate."
+        # USE AGGREGATED CALCULATION FOR CONSISTENCY
+        current_data = data[data["SchoolYear"] == latest_year]
+        prio_agg = current_data.groupby("NameHospital")[["EpiUnderweight", "ValidCounts"]].sum().reset_index()
+        prio_agg["Rate"] = (prio_agg["EpiUnderweight"] / prio_agg["ValidCounts"]) * 100
+        top_row = prio_agg.sort_values("Rate", ascending=False).iloc[0]
+        return f"In {latest_year}, **{top_row['NameHospital']}** is the highest priority health board with a **{top_row['Rate']:.2f}%** underweight rate."
     
     if any(word in user_input for word in ["hello", "hi", "hey"]):
         return "Hello! I'm Nutritionist Chansey. I can provide a deep analysis of the Geographic Priority Map or Historical trends. What would you like to explore?"
@@ -329,16 +332,30 @@ if page == "📍 Geographic Priority Map":
     st.markdown('</div>', unsafe_allow_html=True)
     
     if map_year == "All Years":
-        map_filtered_df = df.groupby(["NameHospital", "lat", "lon"]).agg({"ValidCounts": "sum", "UnderweightRate": "mean"}).reset_index()
+        # Group by Hospital first to get aggregates
+        map_filtered_df = df.groupby(["NameHospital", "lat", "lon"]).agg({"EpiUnderweight": "sum", "ValidCounts": "sum"}).reset_index()
+        # Calculate Weighted Rate
+        map_filtered_df["UnderweightRate"] = (map_filtered_df["EpiUnderweight"] / map_filtered_df["ValidCounts"]) * 100
         year_display = "2001 - 2023 (Avg)"
     else:
         map_filtered_df = df[df['SchoolYear'] == map_year]
         year_display = str(map_year)
+        # Recalculate if there are multiple entries per hospital in one year (e.g. diff sexes)
+        map_filtered_df = map_filtered_df.groupby(["NameHospital", "lat", "lon"]).agg({"EpiUnderweight": "sum", "ValidCounts": "sum"}).reset_index()
+        map_filtered_df["UnderweightRate"] = (map_filtered_df["EpiUnderweight"] / map_filtered_df["ValidCounts"]) * 100
+
     map_filtered_df = map_filtered_df[(map_filtered_df['UnderweightRate'] >= severity_range[0]) & (map_filtered_df['UnderweightRate'] <= severity_range[1])]
 
     k1, k2, k3, k4 = st.columns(4)
     with k1: st.markdown(f'<div class="card"><div class="kpi-title">TOTAL ASSESSED</div><div class="kpi-value">{int(map_filtered_df["ValidCounts"].sum()):,}</div></div>', unsafe_allow_html=True)
-    with k2: st.markdown(f'<div class="card"><div class="kpi-title">AVG UNDERWEIGHT</div><div class="kpi-value">{map_filtered_df["UnderweightRate"].mean():.2f}%</div></div>', unsafe_allow_html=True)
+    
+    # CORRECT WEIGHTED AVG FOR KPI
+    if map_filtered_df["ValidCounts"].sum() > 0:
+        w_avg = (map_filtered_df["EpiUnderweight"].sum() / map_filtered_df["ValidCounts"].sum()) * 100
+    else:
+        w_avg = 0
+    with k2: st.markdown(f'<div class="card"><div class="kpi-title">AVG UNDERWEIGHT</div><div class="kpi-value">{w_avg:.2f}%</div></div>', unsafe_allow_html=True)
+    
     with k3: tp = map_filtered_df.sort_values("UnderweightRate", ascending=False).iloc[0]["NameHospital"] if not map_filtered_df.empty else "N/A"; st.markdown(f'<div class="card"><div class="kpi-title">PRIORITY TARGET</div><div class="kpi-value">{tp}</div></div>', unsafe_allow_html=True)
     with k4: st.markdown(f'<div class="card"><div class="kpi-title">VIEWMODE</div><div class="kpi-value" style="font-size:20px;">{year_display}</div></div>', unsafe_allow_html=True)
 
@@ -379,23 +396,45 @@ elif page == "📊 Demographic Analysis":
     curr_df = df[df["SchoolYear"] == df["SchoolYear"].max()]; c1, c2 = st.columns([1, 1.5])
     with c1:
         st.markdown('<div class="card">', unsafe_allow_html=True); st.subheader("📍 Priority Ranking")
-        prio_df = curr_df.groupby("NameHospital")["UnderweightRate"].mean().sort_values(ascending=False).reset_index()
-        for i, row in prio_df.head(8).iterrows(): st.markdown(f"**{i+1}. {row['NameHospital']}** — `{row['UnderweightRate']:.2f}%` underweight")
+        # FIXED LOGIC: Use weighted average for correct priority ranking
+        prio_df = curr_df.groupby("NameHospital")[["EpiUnderweight", "ValidCounts"]].sum().reset_index()
+        prio_df["UnderweightRate"] = (prio_df["EpiUnderweight"] / prio_df["ValidCounts"]) * 100
+        
+        # Reset Index for correct numbering (1, 2, 3...)
+        prio_df = prio_df.sort_values("UnderweightRate", ascending=False).reset_index(drop=True)
+        
+        for i, row in prio_df.head(8).iterrows(): 
+            st.markdown(f"**{i+1}. {row['NameHospital']}** — `{row['UnderweightRate']:.2f}%` underweight")
         st.markdown('</div>', unsafe_allow_html=True)
     with c2:
         st.markdown('<div class="card">', unsafe_allow_html=True); st.subheader("Underweight by Sex")
-        sex_df = curr_df.groupby("Sex")["UnderweightRate"].mean().reset_index()
-        m_rate = sex_df[sex_df['Sex'] == 'Male']['UnderweightRate'].values[0] if 'Male' in sex_df['Sex'].values else 0
-        f_rate = sex_df[sex_df['Sex'] == 'Female']['UnderweightRate'].values[0] if 'Female' in sex_df['Sex'].values else 0
+        # WEIGHTED AVG SEX STATS
+        sex_df = curr_df.groupby("Sex")[["EpiUnderweight", "ValidCounts"]].sum().reset_index()
+        sex_df["UnderweightRate"] = (sex_df["EpiUnderweight"] / sex_df["ValidCounts"]) * 100
+        
+        sex_df['Label'] = sex_df['Sex'].map({'Male': '♂️ Male', 'Female': '♀️ Female'})
+        
+        m_row = sex_df[sex_df['Sex'] == 'Male']
+        m_rate = m_row['UnderweightRate'].values[0] if not m_row.empty else 0
+        
+        f_row = sex_df[sex_df['Sex'] == 'Female']
+        f_rate = f_row['UnderweightRate'].values[0] if not f_row.empty else 0
+        
         k_male, k_female = st.columns(2)
         with k_male: st.markdown(f'<div class="sex-icon-card"><div class="icon-circle male-icon">♂️</div><div class="icon-text-container"><span class="icon-label">Male Average</span><span class="icon-value">{m_rate:.2f}%</span></div></div>', unsafe_allow_html=True)
         with k_female: st.markdown(f'<div class="sex-icon-card"><div class="icon-circle female-icon">♀️</div><div class="icon-text-container"><span class="icon-label">Female Average</span><span class="icon-value">{f_rate:.2f}%</span></div></div>', unsafe_allow_html=True)
-        fig_sex = px.bar(sex_df, x="Sex", y="UnderweightRate", color="Sex", color_discrete_map={"Male": "#D88AAE", "Female": "#B388FF"})
+        
+        fig_sex = px.bar(
+            sex_df, 
+            x="Label", 
+            y="UnderweightRate", 
+            color="Sex", 
+            color_discrete_map={"Male": "#B388FF", "Female": "#D88AAE"}, 
+            labels={'Label': 'Sex Category', 'UnderweightRate': 'Underweight Rate (%)'},
+            category_orders={"Label": ["♂️ Male", "♀️ Female"]} # Force Order
+        )
         fig_sex.update_layout(showlegend=False, height=350, template="plotly_white"); st.plotly_chart(fig_sex, use_container_width=True); st.markdown('</div>', unsafe_allow_html=True)
 
-# =========================
-# RESTORED: WEIGHT CATEGORY DISTRIBUTION
-# =========================
 elif page == "🍕 Weight Category Distribution":
     st.caption("Detailed view of BMI status across population segments")
     
