@@ -424,6 +424,8 @@ elif page == "📊 Demographic Analysis":
         with k_male: st.markdown(f'<div class="sex-icon-card"><div class="icon-circle male-icon">♂️</div><div class="icon-text-container"><span class="icon-label">Male Average</span><span class="icon-value">{m_rate:.2f}%</span></div></div>', unsafe_allow_html=True)
         with k_female: st.markdown(f'<div class="sex-icon-card"><div class="icon-circle female-icon">♀️</div><div class="icon-text-container"><span class="icon-label">Female Average</span><span class="icon-value">{f_rate:.2f}%</span></div></div>', unsafe_allow_html=True)
         
+        # ALIGNMENT FIX: Use category_orders to force Male on Left, Female on Right
+        # COLOR FIX: Ensure Male is Purple (#B388FF) and Female is Pink (#D88AAE) to match cards
         fig_sex = px.bar(
             sex_df, 
             x="Label", 
@@ -501,4 +503,15 @@ elif page == "🍕 Weight Category Distribution":
 elif page == "📄 Master Data Table":
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.dataframe(df[['SchoolYear', 'NameHospital', 'Sex', 'UnderweightRate', 'HealthyWeightRate', 'OverweightObeseRate', 'ValidCounts']].sort_values(['SchoolYear'], ascending=False), use_container_width=True)
+    
+    # Adding the reference link
+    st.markdown("""
+        <div style='margin-top: 20px; font-size: 14px; color: #6B7280;'>
+            <strong>Data Source:</strong> 
+            <a href='https://www.kaggle.com/datasets/sandeep1080/epidemiological-bmi-of-children-by-gender?select=BMIData.csv' target='_blank' style='color: #D88AAE; text-decoration: none;'>
+                Epidemiological BMI of children by gender (Kaggle)
+            </a>
+        </div>
+    """, unsafe_allow_html=True)
+    
     st.markdown('</div>', unsafe_allow_html=True)
